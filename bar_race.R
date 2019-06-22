@@ -45,21 +45,23 @@ some_data_monthly_rates <- some_data %>%
   ungroup()
 
 some_data_rank_daily <- tibble(
-  entity = rep(LETTERS[1:10], each = 744),
-  day = rep(seq.Date(as.Date("2018-01-01"), by = "day", length.out = mo*31), 
-                   times = 10)) %>%
+  entity = rep(LETTERS[1:10], each = 60),
+  day = rep(seq.Date(as.Date("2018-01-01"), 
+                     by = "2 weeks", length.out = mo*2.5), times = 10)) %>%
   left_join(some_data_monthly_rates, by = c("day" = "month", "entity")) %>%
   fill(daily_rt) %>%
   group_by(entity) %>%
-  mutate(cuml = cumsum(daily_rt)) %>%
+  mutate(cuml = cumsum(daily_rt),
+         last_yr = cuml - lag(26, default = 0)) %>%
   group_by(day) %>%
-  mutate(rank = min_rank(cuml))
+  mutate(rank = min_rank(cuml),
+         rank2 = min_rank(last_yr))
   
 
 
-a <- ggplot(some_data_rank_daily, aes(x = rank)) +
-  geom_tile(aes(y = cuml/2, width = 0.9, height = cuml)) +
-  geom_text(aes(label = entity, y = 0), hjust = 1) +
+a <- ggplot(some_data_rank_daily, aes(x = rank, y = rank2)) +
+  # geom_tile(aes(y = cuml/2, width = 0.9, height = cuml)) +
+  geom_text(aes(label = entity), hjust = 1) +
   coord_flip(clip = "off") +
   transition_time(day)
-animate(a, nframes = 150)
+animate(a, nframes = 300, fps = 25)
